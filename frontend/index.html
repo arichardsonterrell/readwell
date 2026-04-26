@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReadWell — Aphasia Reading Therapy</title>
+  <meta name="description" content="ReadWell helps patients with aphasia practice reading through personalized passages, vocabulary exercises, and supportive feedback." />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Preconnect for font performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ── Header ── -->
+  <header class="app-header">
+    <div class="app-logo">
+      <span class="logo-icon">📖</span>
+      <div>
+        <div class="logo-text">ReadWell</div>
+        <div class="logo-tagline">Aphasia Reading Therapy</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Step indicator ── -->
+  <nav class="step-indicator" aria-label="Progress">
+    <div class="step-dot active" id="step-1" aria-label="Step 1: Setup">1</div>
+    <div class="step-line" id="step-line-1"></div>
+    <div class="step-dot" id="step-2" aria-label="Step 2: Read">2</div>
+    <div class="step-line" id="step-line-2"></div>
+    <div class="step-dot" id="step-3" aria-label="Step 3: Vocabulary">3</div>
+    <div class="step-line" id="step-line-3"></div>
+    <div class="step-dot" id="step-4" aria-label="Step 4: Summary">4</div>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       SCREEN 1 — SESSION SETUP
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="screen active" id="screen1" aria-label="Session Setup">
+
+    <div class="card">
+      <h1 class="card-title">Let's get started!</h1>
+      <p class="card-subtitle">Choose your reading settings below, then tap <em>Generate My Passage</em>.</p>
+
+      <!-- Reading Level -->
+      <div class="field">
+        <label>Reading Level</label>
+        <div class="level-options" role="radiogroup" aria-label="Reading level">
+
+          <div class="level-option selected" data-level="1" role="radio" aria-checked="true" tabindex="0">
+            <input type="radio" name="level" value="1" checked />
+            <div class="level-badge">1</div>
+            <div class="level-info">
+              <strong>Easy</strong>
+              <span>Short sentences · everyday words · 3 sentences per paragraph</span>
+            </div>
+          </div>
+
+          <div class="level-option" data-level="2" role="radio" aria-checked="false" tabindex="0">
+            <input type="radio" name="level" value="2" />
+            <div class="level-badge">2</div>
+            <div class="level-info">
+              <strong>Moderate</strong>
+              <span>Varied structure · broader vocabulary · 4 sentences per paragraph</span>
+            </div>
+          </div>
+
+          <div class="level-option" data-level="3" role="radio" aria-checked="false" tabindex="0">
+            <input type="radio" name="level" value="3" />
+            <div class="level-badge">3</div>
+            <div class="level-info">
+              <strong>Advanced</strong>
+              <span>Complex sentences · rich vocabulary · 5 sentences per paragraph</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Passage Length -->
+      <div class="field">
+        <label>Passage Length</label>
+        <div class="length-options" role="radiogroup" aria-label="Passage length">
+
+          <div class="length-option selected" data-length="1" role="radio" aria-checked="true" tabindex="0">
+            <input type="radio" name="length" value="1" checked />
+            <div class="length-num">1</div>
+            <div class="length-label">paragraph</div>
+          </div>
+
+          <div class="length-option" data-length="2" role="radio" aria-checked="false" tabindex="0">
+            <input type="radio" name="length" value="2" />
+            <div class="length-num">2</div>
+            <div class="length-label">paragraphs</div>
+          </div>
+
+          <div class="length-option" data-length="3" role="radio" aria-checked="false" tabindex="0">
+            <input type="radio" name="length" value="3" />
+            <div class="length-num">3</div>
+            <div class="length-label">paragraphs</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Topic (optional) -->
+      <div class="field">
+        <label for="topic-input">Topic <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <input
+          type="text"
+          id="topic-input"
+          class="text-input"
+          placeholder="e.g. gardening, cooking, a trip to the beach…"
+          maxlength="120"
+          autocomplete="off"
+        />
+        <div class="field-hint">Leave blank for a surprise topic.</div>
+      </div>
+
+      <button class="btn btn-primary" id="generate-btn">
+        Generate My Passage
+      </button>
+      <div class="error-msg" id="generate-error"></div>
+    </div>
+
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       SCREEN 2 — READ THE PASSAGE
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="screen2" aria-label="Read the Passage">
+
+    <div class="card">
+      <h2 class="card-title">Read the passage</h2>
+      <p class="card-subtitle">Take your time. Read as slowly as you like.</p>
+
+      <div class="passage-meta">
+        <span class="badge badge-green" id="passage-level-badge"></span>
+        <span class="badge badge-amber" id="passage-length-badge"></span>
+      </div>
+
+      <div class="passage-text" id="passage-content" aria-live="polite">
+        <!-- Passage paragraphs rendered by JS -->
+      </div>
+
+      <div class="btn-row mt-20">
+        <button class="btn btn-primary" id="finished-reading-btn">
+          I've finished reading
+        </button>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       SCREEN 3 — VOCABULARY PRIMING
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="screen3" aria-label="Vocabulary Check">
+
+    <div class="card">
+      <h2 class="card-title">Word check</h2>
+      <p class="vocab-instructions" id="vocab-instructions">
+        Below are the words. Tap the ones you think appeared in the passage.
+      </p>
+
+      <div class="vocab-counter" id="vocab-counter" aria-live="polite">0 / 0 words selected</div>
+
+      <div class="word-grid" id="word-grid" role="group" aria-label="Word selection grid">
+        <!-- Word chips rendered by JS -->
+      </div>
+
+      <button class="btn btn-primary" id="check-vocab-btn" disabled>
+        Check My Answers
+      </button>
+
+      <!-- Results (shown after checking) -->
+      <div id="vocab-results-section" class="hidden">
+        <div class="vocab-results-legend">
+          <div class="legend-item"><div class="legend-dot correct"></div> Correct</div>
+          <div class="legend-item"><div class="legend-dot wrong"></div> Not in passage</div>
+          <div class="legend-item"><div class="legend-dot missed"></div> Missed</div>
+        </div>
+
+        <div class="vocab-score-box">
+          <div class="vocab-score-num" id="vocab-score-num">0/10</div>
+          <div class="vocab-score-label">words correctly identified</div>
+          <div class="vocab-encouragement" id="vocab-encouragement"></div>
+        </div>
+      </div>
+
+      <!-- Action buttons (shown after checking) -->
+      <div id="vocab-action-btns" class="btn-row hidden">
+        <button class="btn btn-primary" id="go-to-summary-btn">
+          Now provide your summary →
+        </button>
+        <button class="btn btn-secondary" id="reread-btn">
+          Re-read passage
+        </button>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       SCREEN 4 — SUMMARY + FEEDBACK
+  ════════════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="screen4" aria-label="Summary and Feedback">
+
+    <!-- Summary form (hidden after submission) -->
+    <div id="summary-form">
+      <div class="card">
+        <h2 class="card-title">Your summary</h2>
+        <p class="card-subtitle">
+          In 1–2 sentences, what was the passage mainly about?
+        </p>
+
+        <!-- Type / Speak toggle -->
+        <div class="mode-toggle" role="tablist">
+          <button class="mode-btn" id="mode-type-btn" role="tab" aria-selected="false">
+            ✏️ Type
+          </button>
+          <button class="mode-btn active" id="mode-speak-btn" role="tab" aria-selected="true">
+            🎤 Speak
+          </button>
+        </div>
+
+        <!-- Shared textarea — visible in both type and speak modes -->
+        <textarea
+          id="summary-textarea"
+          class="summary-textarea"
+          placeholder="Your spoken words will appear here…"
+          aria-label="Summary text"
+          maxlength="800"
+        ></textarea>
+
+        <!-- Type panel -->
+        <div id="type-panel" class="hidden"></div>
+
+        <!-- Speak panel (default) -->
+        <div id="speak-panel">
+          <div class="mic-permission-notice mt-8">
+            <strong>Microphone access needed.</strong> When you tap <em>Start Recording</em>,
+            your browser will ask for microphone permission. Please tap <strong>Allow</strong>
+            so we can hear your summary. Nothing is stored or sent to us — only the text transcript is used.
+          </div>
+
+          <div class="mic-controls mt-16">
+            <button class="mic-btn idle" id="mic-toggle-btn" aria-label="Start or stop recording">
+              🎤 Start Recording
+            </button>
+            <div class="recording-indicator hidden" id="recording-indicator" aria-live="assertive">
+              <div class="rec-dot"></div> Recording…
+            </div>
+            <div class="mic-transcript-preview" id="interim-preview"></div>
+          </div>
+        </div>
+
+        <div class="btn-row mt-20">
+          <button class="btn btn-amber" id="submit-summary-btn">
+            Get My Feedback
+          </button>
+        </div>
+        <div class="error-msg" id="feedback-error"></div>
+      </div>
+    </div>
+
+    <!-- Feedback section (hidden until submission) -->
+    <div id="feedback-section" class="hidden">
+
+      <!-- Section A: Main Idea -->
+      <div class="fb-card">
+        <div class="fb-card-label">Main Idea</div>
+        <p class="fb-card-text" id="fb-main-idea-text"></p>
+      </div>
+
+      <!-- Section B: Vocabulary -->
+      <div class="fb-card fb-card-vocab">
+        <div class="fb-card-label">Vocabulary</div>
+        <div class="fb-score-row">
+          <span class="fb-fraction" id="fb-score-num">—</span>
+          <span class="fb-score-msg" id="fb-score-msg"></span>
+        </div>
+        <p class="fb-card-text" id="fb-vocab-text"></p>
+        <div id="fb-words-section" class="hidden" style="margin-top:14px;">
+          <div class="fb-words-label">Key words you used</div>
+          <div class="words-used-list" id="fb-words-used"></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="new-session-btn">
+          Start a New Session
+        </button>
+      </div>
+
+    </div>
+
+  </section>
+
+</div><!-- /.app-wrapper -->
+
+<script src="app.js"></script>
+</body>
+</html>
