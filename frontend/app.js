@@ -1,7 +1,7 @@
 // ── Configuration ──────────────────────────────────────────────────────────
 // Update this to your deployed backend URL before hosting on GitHub Pages.
 // During local development, this points to the Express server running locally.
-const BACKEND_URL = 'http://localhost:3001';
+const BACKEND_URL = 'https://readwell-tzvg.onrender.com';
 
 // ── App state ──────────────────────────────────────────────────────────────
 const state = {
