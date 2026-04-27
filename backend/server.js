@@ -14,6 +14,33 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' }));
 
+// ── In-memory diversity tracking ─────────────────────────────────────────────
+const recentTopics       = []; // last 50 topic labels
+const recentFingerprints = []; // last 20 passage fingerprints (first 100 chars, lowercased)
+
+const ANGLES = [
+  'Write from the perspective of someone discovering this topic for the first time.',
+  'Focus on an unexpected or surprising aspect of this topic that most people do not know.',
+  'Begin with a specific sensory detail that brings this topic to life.',
+  'Highlight how this topic connects to everyday human experience around the world.',
+  'Explore an aspect of this topic that challenges common assumptions.',
+  'Describe this topic as if explaining it to a curious adult encountering it for the first time.',
+  'Open with a striking or counterintuitive fact about this topic.',
+];
+
+const REGIONS = [
+  'South America', 'Southeast Asia', 'Northern Europe', 'East Africa',
+  'the Pacific Islands', 'the Arctic', 'Central Asia', 'the Mediterranean',
+  'West Africa', 'the Andes', 'South Asia', 'Eastern Europe',
+];
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function passageFingerprint(text) {
+  return text.trim().toLowerCase().slice(0, 100);
+}
 
 // Helper: escape special regex characters in a word
 function escapeRegex(str) {
@@ -50,7 +77,6 @@ app.post('/api/generate-passage', async (req, res) => {
     3: 'Level 3 Advanced — complex sentences; sophisticated vocabulary; nuanced or abstract ideas. Write EXACTLY 5 sentences per paragraph.',
   };
 
-  // Per-level word counts (change 4)
   const wordConfig = {
     1: { contentCount: 6, distractorCount: 2 },
     2: { contentCount: 10, distractorCount: 5 },
@@ -58,16 +84,31 @@ app.post('/api/generate-passage', async (req, res) => {
   };
   const { contentCount, distractorCount } = wordConfig[Number(level)];
 
-  const randomSeed = Math.floor(Math.random() * 1000) + 1;
-  const topicLine = topic && topic.trim()
-    ? `The passage must be about: ${topic.trim()}`
-    : `Randomization seed for this session: ${randomSeed}. Use this to guide your topic selection toward something unexpected and different.
+  const buildPrompt = () => {
+    const randomSeed = Math.floor(Math.random() * 10000) + 1;
+    const timestamp  = Date.now();
+    const angle      = pick(ANGLES);
+    const region     = pick(REGIONS);
 
-Select a unique and interesting non-fiction topic for this passage. You have complete creative freedom to choose from any area of human knowledge including but not limited to: the natural world, science, history, geography, culture, food, art, music, architecture, exploration, crafts, technology, health, animals, plants, oceans, weather, astronomy, archaeology, anthropology, philosophy, language, sports, transportation, agriculture, medicine, economics, literature, film, theater, dance, fashion, design, engineering, mathematics, psychology, sociology, mythology, religion, folklore, and everyday life around the world. Be creative and unexpected in your topic selection — choose topics that are interesting, educational, and engaging for adult readers. Avoid obvious or overused topics. Surprise the reader with something they may not have thought about before.
+    const avoidBlock = recentTopics.length > 0
+      ? `\nTOPICS ALREADY USED — DO NOT USE THESE OR ANYTHING CLOSELY RELATED TO THEM:\n${recentTopics.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n`
+      : '';
 
-This passage must be completely unique. Do not repeat topics, themes, or subject matter from previous passages. Each session should feel like opening a different page of an encyclopedia — always something new.`;
+    const topicLine = topic && topic.trim()
+      ? `The passage must be about: ${topic.trim()}`
+      : `Select a unique and interesting non-fiction topic for this passage. You have complete creative freedom to choose from any area of human knowledge including but not limited to: the natural world, science, history, geography, culture, food, art, music, architecture, exploration, crafts, technology, health, animals, plants, oceans, weather, astronomy, archaeology, anthropology, philosophy, language, sports, transportation, agriculture, medicine, economics, literature, film, theater, dance, fashion, design, engineering, mathematics, psychology, sociology, mythology, religion, folklore, and everyday life around the world.
+${avoidBlock}
+Writing angle: ${angle}
+Geographic grounding: Draw from or ground this passage in ${region}.
+Be creative and unexpected. Avoid obvious or overused topics. Surprise the reader with something they may not have thought about before.`;
 
-  const prompt = `You are creating a non-fiction reading therapy passage for an adult patient with aphasia. Write in a confident, informative, and engaging tone suitable for adult readers.
+    return `RANDOMIZATION SIGNALS — use these to ensure a completely fresh, unique response:
+- Session seed: ${randomSeed}
+- Timestamp: ${timestamp}
+
+CRITICAL REQUIREMENT: This passage must be 100% original and unique. Do not reproduce, paraphrase, or closely resemble any passage you may have generated before. Treat this as a completely fresh request with no memory of previous sessions. Every word, sentence, and idea in this passage must be newly generated right now.
+
+You are creating a non-fiction reading therapy passage for an adult patient with aphasia. Write in a confident, informative, and engaging tone suitable for adult readers.
 
 CONTENT SAFETY: This is a clinical therapy setting. The passage must be calm, positive, and neutral. Never include: self-harm, suicide, violence, abuse, racism, discrimination, extremism, sexual content, substance abuse, or politically divisive topics.
 
@@ -83,42 +124,74 @@ NUMBER OF PARAGRAPHS: ${Number(paragraphCount)}
 TOPIC: ${topicLine}
 
 ALSO PROVIDE:
-1. Exactly ${contentCount} key CONTENT WORDS from the passage — meaningful nouns, verbs, or adjectives representing the main ideas. NOT function words like "the", "a", "is", "are", "was", "and", "but", "or", "in", "on", "to", "of", "for", "with", "that", "this", "it", "he", "she", "they", "we", "you", "I". Spread them across the passage.
-2. Exactly ${distractorCount} DISTRACTOR words completely unrelated to the passage topic — from a totally different domain so they are obviously out of place (e.g., if the passage is about bees: "glacier", "parliament", "cavalry", "telescope", "invoice").
+1. A short topic label (3–6 words) summarizing what this passage is about — used for session tracking.
+2. Exactly ${contentCount} key CONTENT WORDS from the passage — meaningful nouns, verbs, or adjectives representing the main ideas. NOT function words like "the", "a", "is", "are", "was", "and", "but", "or", "in", "on", "to", "of", "for", "with", "that", "this", "it", "he", "she", "they", "we", "you", "I". Spread them across the passage.
+3. Exactly ${distractorCount} DISTRACTOR words completely unrelated to the passage topic — from a totally different domain so they are obviously out of place (e.g., if the passage is about bees: "glacier", "parliament", "cavalry", "telescope", "invoice").
 
 Return ONLY a single valid JSON object — no markdown, no explanation, no code block:
 {
+  "topic": "short topic label",
   "passage": "Paragraph one text.\\n\\nParagraph two text.",
   "contentWords": ${JSON.stringify(Array.from({ length: contentCount }, (_, i) => `word${i + 1}`))},
   "distractorWords": ${JSON.stringify(Array.from({ length: distractorCount }, (_, i) => `word${i + 1}`))}
 }`;
+  };
 
-  try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
-    });
+  const MAX_ATTEMPTS = 3;
+  let lastData = null;
 
-    const raw = message.content[0].text.trim();
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON object found in Claude response');
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const message = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        temperature: 1.0,
+        messages: [{ role: 'user', content: buildPrompt() }],
+      });
 
-    const data = JSON.parse(jsonMatch[0]);
+      const raw = message.content[0].text.trim();
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON object found in Claude response');
 
-    if (
-      typeof data.passage !== 'string' ||
-      !Array.isArray(data.contentWords)  || data.contentWords.length  !== contentCount ||
-      !Array.isArray(data.distractorWords) || data.distractorWords.length !== distractorCount
-    ) {
-      throw new Error(`Claude response schema mismatch (expected ${contentCount} content, ${distractorCount} distractor words)`);
+      const data = JSON.parse(jsonMatch[0]);
+
+      if (
+        typeof data.passage !== 'string' ||
+        !Array.isArray(data.contentWords)    || data.contentWords.length    !== contentCount ||
+        !Array.isArray(data.distractorWords) || data.distractorWords.length !== distractorCount
+      ) {
+        throw new Error(`Schema mismatch (expected ${contentCount} content, ${distractorCount} distractor words)`);
+      }
+
+      // Fingerprint duplicate check — retry if possible
+      const fp = passageFingerprint(data.passage);
+      if (recentFingerprints.includes(fp) && attempt < MAX_ATTEMPTS) {
+        console.warn(`[generate-passage] Duplicate fingerprint on attempt ${attempt}, retrying…`);
+        continue;
+      }
+
+      // Accept — update tracking
+      if (recentFingerprints.length >= 20) recentFingerprints.shift();
+      recentFingerprints.push(fp);
+
+      if (typeof data.topic === 'string' && data.topic.trim()) {
+        if (recentTopics.length >= 50) recentTopics.shift();
+        recentTopics.push(data.topic.trim());
+      }
+
+      lastData = data;
+      break;
+    } catch (err) {
+      console.error(`[generate-passage] Attempt ${attempt} error:`, err.message);
     }
-
-    res.json(data);
-  } catch (err) {
-    console.error('[generate-passage] Error:', err.message);
-    res.status(500).json({ error: 'Failed to generate passage. Please try again.' });
   }
+
+  if (!lastData) {
+    return res.status(500).json({ error: 'Failed to generate passage. Please try again.' });
+  }
+
+  res.set('Cache-Control', 'no-store');
+  res.json(lastData);
 });
 
 // ── POST /api/get-feedback ───────────────────────────────────────────────────
@@ -132,7 +205,6 @@ app.post('/api/get-feedback', async (req, res) => {
     return res.status(400).json({ error: 'contentWords array is required' });
   }
 
-  // Server-side objective scoring (changes 7 & 8)
   const scoreDenominator = contentWords.length;
   const wordsUsedInSummary = findWordsInSummary(contentWords, summary);
   const scoreNumerator = wordsUsedInSummary.length;
@@ -190,6 +262,7 @@ Return ONLY valid JSON (no markdown, no code block):
       throw new Error('Claude response did not match expected schema');
     }
 
+    res.set('Cache-Control', 'no-store');
     res.json({
       mainIdeaFeedback: data.mainIdeaFeedback,
       vocabularyFeedback: data.vocabularyFeedback,
