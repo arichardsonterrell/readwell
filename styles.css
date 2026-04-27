@@ -594,18 +594,13 @@ body {
 }
 .mic-permission-notice strong { color: var(--amber); }
 
-/* Chrome-on-iOS redirect notice */
-.ios-chrome-notice {
-  background: var(--amber-light);
-  border: 1px solid #e8c88a;
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  font-size: 0.9rem;
-  color: #7a5a20;
-  line-height: 1.6;
+/* iOS Chrome: voice unavailable notice below textarea */
+.ios-type-notice {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.5;
 }
-.ios-chrome-notice p + p { margin-top: 10px; }
-.ios-chrome-notice strong { color: var(--amber); }
 
 .mic-controls {
   display: flex;
