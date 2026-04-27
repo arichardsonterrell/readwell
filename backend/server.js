@@ -14,49 +14,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' }));
 
-// ── Non-fiction topic pool for unique sessions ──────────────────────────────
-const TOPIC_POOL = [
-  'how bees make honey',
-  'why leaves change color in autumn',
-  'how mountains form over millions of years',
-  'the life cycle of a butterfly',
-  'why bread rises when it bakes',
-  'why the ocean appears blue',
-  'how birds navigate during migration',
-  'the role trees play in producing oxygen',
-  'how earthquakes occur along fault lines',
-  'why humans need sleep to stay healthy',
-  'how rainbows form in the sky',
-  'how cacti store water in dry deserts',
-  'how coral reefs support ocean life',
-  'why the human body needs iron',
-  'how volcanoes form and erupt',
-  'how spiders spin their silk webs',
-  'how ocean tides are caused by the moon',
-  'why regular exercise is good for the heart',
-  'how glass is made from sand',
-  'how dogs use their sense of smell to explore the world',
-  'why fruits are often bright colors',
-  'how clouds form and produce rain',
-  'how salmon return to the rivers where they were born',
-  'why the sun appears orange or red at sunset',
-  'how bears prepare for winter hibernation',
-  'how soil supports plant growth',
-  'why ice floats on water instead of sinking',
-  'how music affects mood and the brain',
-  'how caves form slowly in limestone rock',
-  'why some birds are unable to fly',
-  'how cooking changes the texture and flavor of food',
-  'how ancient trade routes connected distant peoples',
-  'how rivers shape the landscape over time',
-  'how the human eye perceives different colors',
-  'why coastal cities often have mild climates',
-  'how the water cycle moves water around the earth',
-  'why humans have fingerprints',
-  'how photosynthesis allows plants to make food from sunlight',
-  'how the pyramids of ancient Egypt were built',
-  'why certain animals are active only at night',
-];
 
 // Helper: escape special regex characters in a word
 function escapeRegex(str) {
@@ -101,11 +58,14 @@ app.post('/api/generate-passage', async (req, res) => {
   };
   const { contentCount, distractorCount } = wordConfig[Number(level)];
 
-  // Random topic selection when none provided (change 1)
-  const randomTopic = TOPIC_POOL[Math.floor(Math.random() * TOPIC_POOL.length)];
+  const randomSeed = Math.floor(Math.random() * 1000) + 1;
   const topicLine = topic && topic.trim()
     ? `The passage must be about: ${topic.trim()}`
-    : `The passage must be about: ${randomTopic}. This topic was randomly selected to ensure a fresh, unique passage — do not use a topic from any other recently generated passage.`;
+    : `Randomization seed for this session: ${randomSeed}. Use this to guide your topic selection toward something unexpected and different.
+
+Select a unique and interesting non-fiction topic for this passage. You have complete creative freedom to choose from any area of human knowledge including but not limited to: the natural world, science, history, geography, culture, food, art, music, architecture, exploration, crafts, technology, health, animals, plants, oceans, weather, astronomy, archaeology, anthropology, philosophy, language, sports, transportation, agriculture, medicine, economics, literature, film, theater, dance, fashion, design, engineering, mathematics, psychology, sociology, mythology, religion, folklore, and everyday life around the world. Be creative and unexpected in your topic selection — choose topics that are interesting, educational, and engaging for adult readers. Avoid obvious or overused topics. Surprise the reader with something they may not have thought about before.
+
+This passage must be completely unique. Do not repeat topics, themes, or subject matter from previous passages. Each session should feel like opening a different page of an encyclopedia — always something new.`;
 
   const prompt = `You are creating a non-fiction reading therapy passage for an adult patient with aphasia. Write in a confident, informative, and engaging tone suitable for adult readers.
 
