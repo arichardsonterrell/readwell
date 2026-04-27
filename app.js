@@ -1,7 +1,9 @@
 // ── Configuration ──────────────────────────────────────────────────────────
 // Update this to your deployed backend URL before hosting on GitHub Pages.
 // During local development, this points to the Express server running locally.
-const BACKEND_URL = 'https://readwell-tzvg.onrender.com';
+const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3001'
+  : 'https://readwell-tzvg.onrender.com';
 
 // True only when the user agent is Chrome on iOS (not Android, not Safari).
 // CriOS is the identifier Chrome injects on iOS; we also confirm an iOS device
