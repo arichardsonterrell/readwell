@@ -69,7 +69,38 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   updateStepIndicator(id);
+  // Home button hidden on the setup screen, visible everywhere else
+  document.getElementById('home-btn').classList.toggle('hidden', id === 'screen1');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Home button + confirmation modal ──────────────────────────────────────
+function initHomeButton() {
+  const modal      = document.getElementById('home-modal');
+  const confirmBtn = document.getElementById('modal-confirm-btn');
+  const cancelBtn  = document.getElementById('modal-cancel-btn');
+  const homeBtn    = document.getElementById('home-btn');
+
+  homeBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+
+  cancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+  // Close on backdrop tap
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.classList.add('hidden');
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
+    stopRecording();
+    // Reset all session state
+    Object.assign(state, {
+      passage: '', contentWords: [], distractorWords: [], allWords: [],
+      selectedWords: new Set(), vocabResults: null, vocabularyScore: 0,
+      rereadMode: false, finalTranscript: '',
+    });
+    showScreen('screen1');
+  });
 }
 
 function updateStepIndicator(screenId) {
@@ -311,7 +342,18 @@ function setInputMode(mode) {
   document.getElementById('speak-panel').classList.toggle('hidden', mode !== 'speak');
   document.getElementById('summary-textarea').placeholder =
     mode === 'speak' ? 'Your spoken words will appear here…' : 'Write your summary here…';
-  if (mode === 'type') stopRecording();
+  if (mode === 'type') {
+    stopRecording();
+  } else {
+    // Pre-warm microphone permission on Android Chrome.
+    // This async call is NOT in the button's click handler so iOS is unaffected.
+    // By the time the patient taps "Start Recording", permission is already granted.
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => stream.getTracks().forEach(t => t.stop()))
+        .catch(() => {}); // user may deny here; SpeechRecognition error handler covers it
+    }
+  }
 }
 
 // ── Speech recognition ──────────────────────────────────────────────────
@@ -319,20 +361,21 @@ function initSpeech() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     document.getElementById('speak-panel').innerHTML =
-      '<p class="text-muted mt-8">Sorry, your browser does not support speech recognition. Please use the Type mode or try Chrome/Edge.</p>';
+      '<p class="text-muted mt-8">Speech recognition is not available on this browser. ' +
+      'Please type your summary or try opening this app in Chrome on Android or Safari on iPhone.</p>';
     document.getElementById('mode-speak-btn').disabled = true;
     return;
   }
 
   const recognition = new SpeechRecognition();
-  recognition.continuous    = true;
+  recognition.continuous     = true;
   recognition.interimResults = true;
   recognition.lang           = 'en-US';
 
   recognition.onresult = e => {
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript; // [0] = highest-confidence alternative
+      const t = e.results[i][0].transcript;
       if (e.results[i].isFinal) state.finalTranscript += t + ' ';
       else interim = t;
     }
@@ -341,21 +384,30 @@ function initSpeech() {
   };
 
   recognition.onerror = e => {
-    if (e.error === 'not-allowed') {
-      showError('feedback-error', 'Microphone access was denied. Please allow access in your browser and try again.');
+    // 'no-speech' and 'aborted' are non-fatal — onend will fire and auto-restart if needed.
+    // Only stop for errors that mean recognition cannot continue at all.
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      showError('feedback-error',
+        'Microphone access was denied. Please allow microphone access in your browser settings and try again.');
+      stopRecording();
     }
-    stopRecording();
+    // All other errors (no-speech, network, aborted): let onend handle restart.
   };
 
   recognition.onend = () => {
+    // iOS Safari/Chrome stops recognition after a short pause — auto-restart until patient taps Stop.
+    // stopRecording() sets state.isRecording = false BEFORE calling recognition.stop(),
+    // so this guard correctly prevents restart after an intentional stop.
     if (state.isRecording) {
-      // Auto-restart if still in recording mode (handles browser timeout)
-      recognition.start();
+      try { recognition.start(); } catch (_) {}
     }
   };
 
   state.recognition = recognition;
 
+  // The click handler calls recognition.start() via startRecording() synchronously —
+  // no async/await or setTimeout between the tap and the start() call, which is
+  // required for iOS Safari and iOS Chrome to grant microphone access.
   document.getElementById('mic-toggle-btn').addEventListener('click', () => {
     if (state.isRecording) stopRecording();
     else startRecording();
@@ -364,8 +416,17 @@ function initSpeech() {
 
 function startRecording() {
   if (!state.recognition) return;
+  // Set the flag before start() so onend's auto-restart guard sees it immediately.
   state.isRecording = true;
-  state.recognition.start();
+  try {
+    state.recognition.start();
+  } catch (e) {
+    // InvalidStateError means recognition is already running — safe to ignore.
+    if (e.name !== 'InvalidStateError') {
+      state.isRecording = false;
+      return;
+    }
+  }
   const btn = document.getElementById('mic-toggle-btn');
   btn.classList.remove('idle');
   btn.classList.add('recording');
@@ -478,5 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initScreen2();
   initScreen3();
   initScreen4();
+  initHomeButton();
   showScreen('screen1');
 });

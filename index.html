@@ -23,6 +23,9 @@
         <div class="logo-tagline">Aphasia Reading Therapy</div>
       </div>
     </div>
+    <button class="home-btn hidden" id="home-btn" aria-label="Start over">
+      🏠 <span>Start Over</span>
+    </button>
   </header>
 
   <!-- ── Step indicator ── -->
@@ -304,6 +307,17 @@
   </section>
 
 </div><!-- /.app-wrapper -->
+
+<!-- ── Home confirmation modal ── -->
+<div class="modal-overlay hidden" id="home-modal" role="dialog" aria-modal="true" aria-labelledby="modal-msg">
+  <div class="modal-box">
+    <p class="modal-msg" id="modal-msg">Start a new session?<br>Your current progress will not be saved.</p>
+    <div class="modal-btns">
+      <button class="btn btn-primary" id="modal-confirm-btn">Yes, start over</button>
+      <button class="btn btn-secondary" id="modal-cancel-btn">Keep going</button>
+    </div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>

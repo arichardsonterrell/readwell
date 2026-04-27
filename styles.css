@@ -47,7 +47,33 @@ body {
 .app-header {
   text-align: center;
   margin-bottom: 28px;
+  position: relative;
 }
+
+/* ── Home button ── */
+.home-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--radius-sm);
+  min-height: 36px;
+  transition: color var(--transition), background var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.home-btn:hover,
+.home-btn:active { color: var(--text); background: rgba(0,0,0,0.06); }
 .app-logo {
   display: inline-flex;
   align-items: center;
@@ -552,15 +578,22 @@ body {
 .mic-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
-  padding: 14px 28px;
+  padding: 14px 32px;
+  min-height: 52px;        /* iOS/Android minimum touch target */
+  min-width: 200px;
   border-radius: 50px;
   border: none;
   font-family: 'DM Sans', sans-serif;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
+  touch-action: manipulation;       /* prevent double-tap zoom on mobile */
+  -webkit-tap-highlight-color: transparent;
   transition: background var(--transition), transform 0.1s;
+  position: relative;
+  z-index: 1;
 }
 .mic-btn:active { transform: scale(0.97); }
 .mic-btn.idle     { background: var(--green); color: #fff; }
@@ -729,6 +762,38 @@ body {
 .mt-20 { margin-top: 20px; }
 .text-center { text-align: center; }
 .text-muted  { color: var(--muted); font-size: 0.88rem; }
+
+/* ── Home confirmation modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 30px 24px 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.modal-msg {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text);
+  margin-bottom: 22px;
+}
+.modal-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 /* ── Mobile tweaks ── */
 @media (max-width: 400px) {
