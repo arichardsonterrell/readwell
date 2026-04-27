@@ -110,6 +110,7 @@ function initHomeButton() {
       selectedWords: new Set(), vocabResults: null, vocabularyScore: 0,
       rereadMode: false, finalTranscript: '',
     });
+    document.getElementById('topic-input').value = '';
     showScreen('screen1');
   });
 }
@@ -545,6 +546,7 @@ function initScreen4() {
     state.vocabResults = null;
     state.vocabularyScore = 0;
     state.rereadMode = false;
+    document.getElementById('topic-input').value = '';
     showScreen('screen1');
   });
   initSpeech();
