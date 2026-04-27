@@ -31,7 +31,11 @@ const ANGLES = [
 const REGIONS = [
   'South America', 'Southeast Asia', 'Northern Europe', 'East Africa',
   'the Pacific Islands', 'the Arctic', 'Central Asia', 'the Mediterranean',
-  'West Africa', 'the Andes', 'South Asia', 'Eastern Europe',
+  'West Africa', 'the Andes', 'South Asia', 'Eastern Europe', 'New England', 
+  'the Southwest', 'New York', 'California', 'the Pacific Northwest',
+  'the Midwest (US)', 'the South (US)', 'Alaska', 'Australia', 'Central America',
+  'Scandinavia', 'the Pacific Islands', 'India', 'the Middle East', 'North America',
+  'Canada', 'Japan', 'China'
 ];
 
 function pick(arr) {
