@@ -358,6 +358,17 @@ function setInputMode(mode) {
 
 // ── Speech recognition ──────────────────────────────────────────────────
 function initSpeech() {
+  // Chrome on iOS (CriOS) uses WebKit under the hood and does not support
+  // the Web Speech API — this cannot be fixed in code. Show a redirect notice.
+  if (/CriOS/i.test(navigator.userAgent)) {
+    document.getElementById('speak-panel').innerHTML =
+      '<div class="ios-chrome-notice mt-8">' +
+        '<p>You are using <strong>Chrome on iPhone</strong>. For voice input, please open this app in Safari instead.</p>' +
+        '<p>Tap the <strong>share button</strong> &#x2197; in Chrome and select <strong>Open in Safari</strong>.</p>' +
+      '</div>';
+    return; // Type tab remains fully usable
+  }
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     document.getElementById('speak-panel').innerHTML =

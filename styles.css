@@ -34,6 +34,7 @@ body {
   min-height: 100vh;
   line-height: 1.6;
   padding: 0;
+  touch-action: pan-y pinch-zoom;  /* allow normal iOS scroll and pinch */
 }
 
 /* ── Layout ── */
@@ -41,6 +42,10 @@ body {
   max-width: 680px;
   margin: 0 auto;
   padding: 24px 16px 48px;
+  overflow-y: scroll;                      /* iOS scroll surface */
+  -webkit-overflow-scrolling: touch;       /* momentum scrolling on older iOS */
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior: contain;            /* prevent scroll chaining to parent */
 }
 
 /* ── Header ── */
@@ -425,6 +430,7 @@ body {
   text-align: center;
   transition: border-color var(--transition), background var(--transition), color var(--transition);
   word-break: break-word;
+  touch-action: manipulation;  /* tap without blocking scroll on the grid */
 }
 .word-chip:hover:not(.revealed) { border-color: var(--green); background: var(--green-light); }
 .word-chip.selected {
@@ -568,6 +574,19 @@ body {
   line-height: 1.5;
 }
 .mic-permission-notice strong { color: var(--amber); }
+
+/* Chrome-on-iOS redirect notice */
+.ios-chrome-notice {
+  background: var(--amber-light);
+  border: 1px solid #e8c88a;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  font-size: 0.9rem;
+  color: #7a5a20;
+  line-height: 1.6;
+}
+.ios-chrome-notice p + p { margin-top: 10px; }
+.ios-chrome-notice strong { color: var(--amber); }
 
 .mic-controls {
   display: flex;
