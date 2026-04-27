@@ -3,6 +3,14 @@
 // During local development, this points to the Express server running locally.
 const BACKEND_URL = 'https://readwell-tzvg.onrender.com';
 
+// True only when the user agent is Chrome on iOS (not Android, not Safari).
+// CriOS is the identifier Chrome injects on iOS; we also confirm an iOS device
+// is present so no Android browser is ever caught by the iOS-specific fixes.
+const IS_CRIOS = (() => {
+  const ua = navigator.userAgent;
+  return /CriOS/i.test(ua) && /iPhone|iPad|iPod/i.test(ua);
+})();
+
 // ── App state ──────────────────────────────────────────────────────────────
 const state = {
   level: 1,
@@ -71,7 +79,8 @@ function showScreen(id) {
   updateStepIndicator(id);
   // Home button hidden on the setup screen, visible everywhere else
   document.getElementById('home-btn').classList.toggle('hidden', id === 'screen1');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // CriOS smooth scroll triggers repaint jank — use instant for Chrome on iOS
+  window.scrollTo({ top: 0, behavior: IS_CRIOS ? 'instant' : 'smooth' });
 }
 
 // ── Home button + confirmation modal ──────────────────────────────────────
@@ -360,7 +369,7 @@ function setInputMode(mode) {
 function initSpeech() {
   // Chrome on iOS (CriOS) uses WebKit under the hood and does not support
   // the Web Speech API — this cannot be fixed in code. Show a redirect notice.
-  if (/CriOS/i.test(navigator.userAgent)) {
+  if (IS_CRIOS) {
     document.getElementById('speak-panel').innerHTML =
       '<div class="ios-chrome-notice mt-8">' +
         '<p>You are using <strong>Chrome on iPhone</strong>. For voice input, please open this app in Safari instead.</p>' +
@@ -499,7 +508,7 @@ async function submitSummary() {
     renderFeedback(feedback);
     document.getElementById('summary-form').classList.add('hidden');
     document.getElementById('feedback-section').classList.remove('hidden');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: IS_CRIOS ? 'instant' : 'smooth' });
   } catch (err) {
     showError('feedback-error', err.message || 'Something went wrong. Please try again.');
   } finally {
@@ -544,12 +553,32 @@ function initScreen4() {
   initSpeech();
 }
 
+// ── Scroll compatibility fallback ─────────────────────────────────────────
+// If the page has overflowing content but scroll is blocked (e.g. by an
+// upstream CSS rule in some Android browsers), force overflow-y on the body.
+// Runs after the first paint so layout measurements are accurate.
+function applyScrollFallback() {
+  requestAnimationFrame(() => {
+    if (document.documentElement.scrollHeight <= window.innerHeight) return;
+    const before = window.scrollY;
+    window.scrollBy(0, 1);           // instant 1px probe — no visible jump
+    const canScroll = window.scrollY !== before;
+    window.scrollBy(0, -1);          // restore
+    if (!canScroll) {
+      document.body.style.overflowY = 'scroll';
+      document.documentElement.style.height = 'auto';
+    }
+  });
+}
+
 // ── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  if (IS_CRIOS) document.body.classList.add('ios-chrome');
   initScreen1();
   initScreen2();
   initScreen3();
   initScreen4();
   initHomeButton();
   showScreen('screen1');
+  applyScrollFallback();
 });

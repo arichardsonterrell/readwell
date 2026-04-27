@@ -26,15 +26,22 @@
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+
+/* height:100% on both lets content overflow naturally to the document scroll layer,
+   which every browser handles correctly including DuckDuckGo on Android. */
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+  background: var(--bg); /* extends bg below body when content is short */
+}
 body {
   font-family: 'DM Sans', sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  height: 100%;
   line-height: 1.6;
   padding: 0;
-  touch-action: pan-y pinch-zoom;  /* allow normal iOS scroll and pinch */
+  touch-action: pan-y pinch-zoom;
 }
 
 /* ── Layout ── */
@@ -42,10 +49,22 @@ body {
   max-width: 680px;
   margin: 0 auto;
   padding: 24px 16px 48px;
-  overflow-y: scroll;                      /* iOS scroll surface */
-  -webkit-overflow-scrolling: touch;       /* momentum scrolling on older iOS */
-  touch-action: pan-y pinch-zoom;
-  overscroll-behavior: contain;            /* prevent scroll chaining to parent */
+  /* overflow-y: auto — safe universal default.
+     Without a fixed height on this container, auto never creates a scroll trap.
+     The document-level scroll handles all vertical scrolling on every browser. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;  /* iOS Safari momentum scroll — harmless elsewhere */
+  touch-action: pan-y;               /* pass vertical touch gestures to native scroll */
+}
+
+/* Chrome on iOS scroll fixes — applied ONLY when body.ios-chrome is present,
+   which is set only when CriOS AND iPhone/iPad are both in the user agent.
+   Safari, Android Chrome, and DuckDuckGo are never affected. */
+.ios-chrome .app-wrapper {
+  overflow-y: scroll;                /* CriOS requires explicit scroll declaration */
+  -webkit-overflow-scrolling: auto;  /* remove Safari-specific hint; interferes with CriOS */
+  overscroll-behavior-y: none;       /* suppress bounce/jump on scroll edges */
+  transform: translateZ(0);          /* GPU compositing layer for smoother CriOS scroll */
 }
 
 /* ── Header ── */
